@@ -11,8 +11,8 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
 import android.widget.ImageView
+import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.core.app.ActivityCompat
 
 class IntentsFragment : Fragment() {
 
@@ -26,10 +26,11 @@ class IntentsFragment : Fragment() {
             imageView.setImageURI(selectedImageUri)
         }
     }
+
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
-    ): View? {
+    ): View {
         val view = inflater.inflate(R.layout.fragment_intents, container, false)
 
         imageView = view.findViewById(R.id.imageView)
@@ -41,7 +42,11 @@ class IntentsFragment : Fragment() {
         }
 
         shareImageButton.setOnClickListener {
-            shareToInstagramStories()
+            if (selectedImageUri != null) {
+                shareToInstagramStories(selectedImageUri!!)
+            } else {
+                Toast.makeText(requireContext(), "Сначала выберите изображение", Toast.LENGTH_SHORT).show()
+            }
         }
 
         return view
@@ -52,22 +57,17 @@ class IntentsFragment : Fragment() {
         pickImageLauncher.launch(intent)
     }
 
-    private fun shareToInstagramStories() {
-        val imageUri = Uri.parse("android.resource://${requireContext().packageName}/${selectedImageUri}") // Заменить на свой ресурс
-
+    private fun shareToInstagramStories(imageUri: Uri) {
         val intent = Intent("com.instagram.share.ADD_TO_STORY").apply {
-            setDataAndType(imageUri, "image/png") // Формат изображения
+            setDataAndType(imageUri, "image/*")
             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-            setPackage("com.instagram.android") // Открываем Instagram
+            putExtra("source_application", "1592444761470600")
         }
 
-        if (intent.resolveActivity(requireContext().packageManager) != null) {
-            startActivity(intent) // Открываем Instagram
-        } else {
-            // Если Instagram не установлен, открываем его страницу в Google Play
-            val playStoreIntent = Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=com.instagram.android"))
-            startActivity(playStoreIntent)
+        try {
+            startActivity(intent)
+        } catch (e: Exception) {
+            Toast.makeText(requireContext(), "Instagram не установлен или не поддерживает эту функцию", Toast.LENGTH_SHORT).show()
         }
     }
-
 }
